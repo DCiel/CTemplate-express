@@ -1,0 +1,27 @@
+{
+  "name": "common-express",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "bunx prisma generate && bun src/index.ts",
+    "migrate": "bunx prisma migrate dev --name init"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "prisma": "^6.5.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.5.0",
+    "@types/express": "^5.0.1",
+    "express": "^4.21.2",
+    "path": "^0.12.7",
+    "zod": "^3.24.2"
+  },
+  "prisma": {
+    "schema": "src/database/prisma/schema.prisma"
+  }
+}
