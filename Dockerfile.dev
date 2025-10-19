@@ -1,0 +1,24 @@
+# Development образ с hot reload
+FROM oven/bun:1
+
+# Устанавливаем рабочую директорию
+WORKDIR /app
+
+# Копируем файлы зависимостей
+COPY package.json bun.lock ./
+
+# Устанавливаем все зависимости (включая dev)
+RUN --mount=type=cache,id=bun,target=/root/.bun/install/cache \
+    bun install
+
+# Копируем исходный код
+COPY . .
+
+# Генерируем Prisma клиент
+RUN bunx prisma generate --schema=./src/database/prisma/schema.prisma
+
+# Открываем порт
+EXPOSE 4000
+
+# Запускаем в режиме разработки с hot reload
+CMD ["bun", "--watch", "src/index.ts"]

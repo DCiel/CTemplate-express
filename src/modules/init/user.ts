@@ -12,6 +12,4 @@ export const UserInit = async () => {
         update: { }
     });
 
-    console.log(`COUNT USERS: ${await prisma.user.count()}`);
-
 }

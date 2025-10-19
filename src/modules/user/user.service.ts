@@ -1,12 +1,11 @@
 import type { Request, Response } from "express";
-import { userSchema, type User } from "./user.schemas";
+import { userSchema, type User, type UserCreate, type UserUpdate } from "./user.schemas";
 import { validateSchema } from "@/common/validate";
-import { prisma } from "@";
+import { prisma } from "@/database";
 
 export class UserService {
 
-    create = async (req: Request, res: Response) => {
-        const body = await validateSchema({dto: req.body, schema: userSchema, schemaName: "/user/create"})
+    create = async (body: UserCreate) => {
 
         const user = await prisma.user.findFirst({
             where: {
@@ -15,7 +14,7 @@ export class UserService {
         });
 
         if(user) {
-            res.json("User many exist");
+            throw new Error("User many exist");
             return
         }
         
@@ -23,13 +22,10 @@ export class UserService {
             data: body
         });
 
-        res.json("ok");
-        return;
+        return "User created successfully";
     }
 
-    delete = async (req: Request, res: Response) => {
-        const body = req.body;
-        const id = body.id;
+    delete = async (id: number) => {
 
         const user = await prisma.user.findFirst({
             where: {
@@ -38,8 +34,7 @@ export class UserService {
         });
 
         if(!user) {
-            res.json("User not found");
-            return;
+            throw new Error("User not found");
         }
 
         await prisma.user.delete({
@@ -48,15 +43,13 @@ export class UserService {
             }
         });
 
-        res.json("ok");
-        return;
+        return "User deleted successfully";
     }
 
-    getAll = async (req: Request, res: Response) => {
+    getAll = async () => {
         const users = await prisma.user.findMany();
 
-        res.json(users);
-        return;
+        return users;
     }
 
     get = async (req: Request, res: Response) => {
@@ -78,11 +71,7 @@ export class UserService {
         return;
     }
 
-    update = async (req: Request, res: Response) => {
-        const body = await validateSchema({dto: req.body, schema: userSchema, schemaName: "/user/update"})
-
-        const params = req.params;
-        const id = Number(params.id);
+    update = async (body: UserUpdate, id: number) => {
 
         const user = await prisma.user.findFirst({
             where: {
@@ -91,8 +80,7 @@ export class UserService {
         });
 
         if(!user) {
-            res.json("User not found");
-            return;
+            throw new Error("User not found");
         }
 
         await prisma.user.update({
@@ -103,7 +91,6 @@ export class UserService {
             }
         });
 
-        res.json("ok");
-        return;
+        return "User updated successfully";
     }
 }

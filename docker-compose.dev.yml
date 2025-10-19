@@ -4,7 +4,7 @@ services:
   # База данных PostgreSQL
   postgres:
     image: postgres:17-alpine
-    container_name: ${COMPOSE_PROJECT_NAME:-common-express}-postgres
+    container_name: ${COMPOSE_PROJECT_NAME:-common-express}-postgres-dev
     env_file:
       - .env
     environment:
@@ -14,9 +14,9 @@ services:
     ports:
       - '${POSTGRES_PORT:-5432}:5432'
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-dev-data:/var/lib/postgresql/data
     networks:
-      - app-network
+      - app-dev-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
@@ -28,15 +28,15 @@ services:
   # Redis для кэширования
   redis:
     image: redis:7-alpine
-    container_name: ${COMPOSE_PROJECT_NAME:-common-express}-redis
+    container_name: ${COMPOSE_PROJECT_NAME:-common-express}-redis-dev
     env_file:
       - .env
     ports:
       - '${REDIS_PORT:-6379}:6379'
     volumes:
-      - redis-data:/data
+      - redis-dev-data:/data
     networks:
-      - app-network
+      - app-dev-network
     restart: unless-stopped
     command: redis-server --appendonly yes
     healthcheck:
@@ -45,20 +45,21 @@ services:
       timeout: 5s
       retries: 3
 
-  # Основное приложение (production)
+  # Приложение для разработки с hot reload
   app:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
       cache_from:
         - oven/bun:1
-        - oven/bun:1-slim
-    container_name: ${COMPOSE_PROJECT_NAME:-common-express}-app
+    container_name: ${COMPOSE_PROJECT_NAME:-common-express}-app-dev
     env_file:
       - .env
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - PORT=${PORT:-4000}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://redis:6379
     ports:
       - '${PORT:-4000}:4000'
     depends_on:
@@ -67,10 +68,14 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - app-network
+      - app-dev-network
     restart: unless-stopped
     volumes:
+      - ./src:/app/src
       - ./logs:/app/logs
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./package.json:/app/package.json
+      - ./bun.lock:/app/bun.lock
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
       interval: 30s
@@ -79,11 +84,11 @@ services:
       start_period: 40s
 
 networks:
-  app-network:
+  app-dev-network:
     driver: bridge
 
 volumes:
-  postgres-data:
+  postgres-dev-data:
     driver: local
-  redis-data:
+  redis-dev-data:
     driver: local
